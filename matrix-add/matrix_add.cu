@@ -31,15 +31,12 @@ void print_matrix(std::string label, int *matrix, int width, int height) {
     std::cout << label << " [" << height << " x " << width << "] row-major\n";
     
     for (int row = 0; row < height; row++) {
-        std::cout << "|\t";
-
+        std::cout << "||\t";
         for (int col = 0; col < width; col++) {
             std::cout << matrix[row * width + col] << "\t";
         }
-
-        std::cout << "|\n";
+        std::cout << "||\n";
     }
-
     std::cout << "\n";
 }
 
