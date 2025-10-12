@@ -1,2 +1,5 @@
-# cuda-sandbox
-A sandbox for CUDA projects
+# 🧩 CUDA Sandbox
+
+A personal collection of small CUDA programs written while learning GPU programming.  
+
+
