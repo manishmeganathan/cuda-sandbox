@@ -2,8 +2,8 @@
 #include <math.h>
 #include <time.h>
 
-#define SIZE 1<<20                          // 1 million vector elements
-#define BLCK 256                            // 256 thread per block to launch for parallel execution
+#define SIZE 1000000                        // 1 million vector elements
+#define BLCK 1000                           // 256 thread per block to launch for parallel execution
 #define GRID (SIZE + BLCK - 1) / BLCK       // computation grid = # of execution blocks to launch
 
 // Function to add the elements of two vectors serially
@@ -29,7 +29,7 @@ __global__ void add_parallel(float *a, float *b, float *c) {
 // Function to initialize a vector with random values
 void init_vector(float *vector) {
     for (int i = 0; i < SIZE; i++) {
-        vec[i] = (float)rand() / RAND_MAX;
+        vector[i] = (float)rand() / RAND_MAX;
     }
 }
 
@@ -73,7 +73,7 @@ int main() {
     // Run 10 operations of the CPU vector addition
     for (int i = 0; i < 10; i++) {
         double start_time = get_time();
-        vector_add_cpu(h_a, h_b, h_c_cpu, N);
+        add_serial(h_A, h_B, hs_C);
 
         double end_time = get_time();
         cpu_total_time += end_time - start_time;
@@ -85,7 +85,7 @@ int main() {
     // Run 10 operations of the GPU vector addition
     for (int i = 0; i < 10; i++) {
         double start_time = get_time();
-        vector_add_gpu<<<num_blocks, BLOCK_SIZE>>>(d_a, d_b, d_c, N);
+        add_parallel<<<GRID, BLCK>>>(d_A, d_B, d_C);
         cudaDeviceSynchronize(); // Check that all threads have finished executing
 
         double end_time = get_time();
@@ -93,23 +93,24 @@ int main() {
     }
 
     // Verify results (sanity check)
-    cudaMemcpy(h_c_gpu, d_c, size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(hp_C, d_C, size, cudaMemcpyDeviceToHost);
     bool correct = true;
     for (int i = 0; i < SIZE; i++) {
-        if (fabs(h_c_cpu[i] - h_c_gpu[i]) > 1e-5) {
+        if (fabs(hs_C[i] - hp_C[i]) > 1e-5) {
             correct = false;
             break;
         }
     }
 
     printf("Results are %s\n", correct ? "correct" : "incorrect");
-    printf("CPU average time: %f milliseconds\n", cpu_avg_time*1000);
-    printf("GPU average time: %f milliseconds\n", gpu_avg_time*1000);
-    printf("Boost: %fx\n", cpu_avg_time / gpu_avg_time);
 
     // Calculate average execution times
     double cpu_avg_time = cpu_total_time / 10.0;
     double gpu_avg_time = gpu_total_time / 10.0;
+
+    printf("CPU average time: %f ms\n", cpu_avg_time*1000);
+    printf("GPU average time: %f ms\n", gpu_avg_time*1000);
+    printf("Boost: %fx\n", cpu_avg_time / gpu_avg_time);
 
     // Free memory
     free(h_A);
